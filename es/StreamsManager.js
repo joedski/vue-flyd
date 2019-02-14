@@ -7,7 +7,8 @@ export default function StreamsManager(vm) {
     $createSource(
       name,
       watchBinding = name,
-      watchHandler = stream => next => stream(next)
+      watchHandler = stream => next => stream(next),
+      watchOptions = {}
     ) {
       let sourceStream
 
@@ -44,7 +45,7 @@ export default function StreamsManager(vm) {
               // with the vm as the context.
               watchBinding,
               watchHandler(sourceStream),
-              { immediate: true }
+              watchOptions
             )
           },
         })
@@ -57,7 +58,11 @@ export default function StreamsManager(vm) {
 
     $data() {
       this.$sinks = config
-        ? config.call(vm, (name, watchBinding) => this.$createSource(name, watchBinding))
+        ? config.call(
+          vm,
+          (name, watchBinding, watchHandler, watchOptions) =>
+            this.$createSource(name, watchBinding, watchHandler, watchOptions)
+        )
         : {}
 
       return Object.keys(this.$sinks).reduce(
