@@ -105,9 +105,9 @@ export default {
 
 ### Component Option: The Streams Definition Function `streams(source)`
 
-> NOTE: Do NOT reference `this.$streams` within the Streams Definition Function!  You should also not directly access props, data or otherwise, within the Streams Definition Function.  Use `source('streamName', 'propName')` instead to create a stream that streams values of that prop, or `source('streamName', () => (this.propName + this.otherPropName))` to use a derivation.
-
 The `StreamsMixin` adds support for the Component Option `streams(source)`, which is the Streams Definition Function.
+
+> NOTE: Do NOT reference `this.$streams` within the Streams Definition Function!  You should also not directly access props, data or otherwise, within the Streams Definition Function.  Use `source('streamName', 'propName')` instead to create a stream that streams values of that prop, or `source('streamName', () => (this.propName + this.otherPropName))` to use a derivation.
 
 The Streams Definition Function receives the following arguments:
 
