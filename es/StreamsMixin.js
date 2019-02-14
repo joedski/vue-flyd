@@ -5,6 +5,7 @@ export default {
     this.$streams = StreamsManager(this)
   },
 
+  // data() comes before created(), as per the vue lifecycle spec.
   data() {
     return this.$streams.$data()
   },
