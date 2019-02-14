@@ -9,16 +9,8 @@ export default function StreamsManager(vm) {
     $createSource(
       name,
       watchBinding = name,
-      watchHandler,
       watchOptions = { immediate: true }
     ) {
-      if (watchHandler != null && typeof watchHandler !== 'function') {
-        watchOptions = watchHandler
-      }
-      if (typeof watchHandler !== 'function') {
-        watchHandler = stream => next => stream(next)
-      }
-
       const sourceStream = Object.assign(flyd.stream(), {
         $watch() {
           // Nothing to watch if we're not watching.
@@ -28,7 +20,7 @@ export default function StreamsManager(vm) {
             // NOTE: When the watchBinding is a function, it's called
             // with the vm as the context.
             watchBinding,
-            watchHandler(sourceStream),
+            next => sourceStream(next),
             // NOTE: When passing `immediate: true`, a value will be
             // immediately pushed into the stream!
             watchOptions
@@ -45,8 +37,8 @@ export default function StreamsManager(vm) {
       this.$sinks = config
         ? config.call(
           vm,
-          (name, watchBinding, watchHandler, watchOptions) =>
-            this.$createSource(name, watchBinding, watchHandler, watchOptions)
+          (name, watchBinding, watchOptions) =>
+            this.$createSource(name, watchBinding, watchOptions)
         )
         : {}
 
