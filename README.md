@@ -157,85 +157,103 @@ The Component Option `streams` has two keys: `streams.sources` and `streams.sink
 
 
 
-
-### Component Option: The Streams Definition Function `streams(source)`
-
-The `StreamsMixin` adds support for the Component Option `streams(source)`, which is the Streams Definition Function.
-
-> NOTE: Do NOT reference `this.$streams` within the Streams Definition Function!  You should also not directly access props, data or otherwise, within the Streams Definition Function.  Use `source('streamName', 'propName')` instead to create a stream that streams values of that prop, or `source('streamName', () => (this.propName + this.otherPropName))` to use a derivation.
-
-The Streams Definition Function receives the following arguments:
-
-- `source: (name, watchBinding, watchOptions) => Stream<*>` is a function that declares a Source Stream, optionally with extra arguments to automatically create a Vue Watch Binding and link it to that stream.
-    - Parameters:
-        - `name: string` The name of this Source Stream.
-            - Required.
-        - `watchBinding: string | Function` Watches an expression or result of a function.  Anything you can pass to [`vm.$watch()`](https://vuejs.org/v2/api/#vm-watch) you can pass in here, too.
-            - Default: `undefined`.  If no `watchBinding` is passed, [`$watch`](https://vuejs.org/v2/api/#vm-watch) is not called.
-            - NOTE: Because the Streams Definition Function `streams()` is called with the Vue Component Instance as its context, using arrow functions for the Watch Binding is perfectly fine.
-        - `watchOptions: Partial<{ deep: boolean, immediate: boolean }>` [Options to pass to `$watch`](https://vuejs.org/v2/api/#vm-watch).
-            - Default: `{ immediate: true }` By default, watch bindings are immediate to ensure the stream always has an initial value.
-    - Return Value: `{ [sinkName: string]: Stream }`
-        - An object mapping names of sinks to streams.
-    - Alternate Interfaces:
-        - `(name: string) => Stream<*>` Create a stream without any watching.
-        - `(name: string, watchBinding: string | Function) => Stream<*>` Create a stream, watching the given binding.
-        - `(name: string, watchBinding: string | Function, watchOptions: Object) => Stream<*>` Create a Stream, watching the given binding, with the given options.
-
-#### How the Streams Definition Function `stream(source)` Integrates With the Component
-
-When ever you call `source(name, ...)` to create a Source Stream in your Streams Definition Function, a new Stream will be created and attached to `this.$streams.$sources` at the given name.  Additionally, this stream will be aliased to the same name on `this.$streams` for laziness.
-
-Thus, if you call `source('foo')`, a new Stream is created, and will appear in both of these places:
-- `this.$streams.$sources.foo`
-- `this.$streams.foo`
-
-The value you return from the Streams Definition Function must be an object mapping names to streams.  All such streams returned will be attached to `this.$streams.$sinks`.
-
-As an added convenience, a Data Prop will be created for each stream returned in the Sinks object.  Each Data Prop holds current value of the same-named Sink Stream so that you can use these values in the Vue template, among other places.  This is how updates to streams cause updates in Vue.
-
-Thus, if you return `{ bar: someDerivedStream }`, you'll have the following available:
-- The Stream itself at `this.$streams.$sinks.bar`
-- The current value of the Stream at `this.bar`
-
-#### Example Calls to `source()`
+## Example: `fromWatch()`
 
 ```js
 export default {
-    mixins: [StreamsMixin],
+  mixins: [StreamsMixin],
 
-    streams(source) {
-        // (name) => Stream<*>
-        const sourceWithNoWatch = source('bareSource')
-        // (name, watchBinding) => Stream<*>
-        const sourceWithPropWatch = source('propSource', 'someProp')
-        // (name, watchBinding) => Stream<*>
-        const sourceWithFunctionWatch = source('funSource', () => (this.someProp + this.otherProp))
-        // (name, watchBinding, watchOptions) => Stream<*>
-        const sourceWithDeepWatcher = source(
-            'deepPropSource',
-            'someObjectProp',
-            { deep: true, immediate: true }
-        )
+  streams: {
+    sources({ fromWatch }) {
+      // For things like event streams, we just create a plain stream.
+      const mouseEvents = flyd.stream()
 
-        const bigFatArrayOfEverything = flyd.combine(
-            (...deps, self, changed) => {
-                return deps.map(dep => dep())
-            },
-            [sourceWithNoWatch, sourceWithPropWatch, sourceWithFunctionWatch, sourceWithDeepWatcher]
-        )
+      // For creating a stream from a prop, we can just watch the prop.
+      const labelProp = fromWatch('prop')
 
-        // return sinks.
-        return {
-            bigFatArrayOfEverything
-        }
+      // For some cases, you can watch a derivation instead of just a prop.
+      const combinedProp = fromWatch(() => this.a + this.b)
+
+      // You can also pass options to fromWatch().
+      const deepProp = fromWatch('someObjectProp', { deep: true })
+      
+      return { mouseEvents, labelProp, combinedProp, deepProp }
     },
-
-    watch: {
-        // this.bigFatArrayOfEverything holds the current value of the stream this.$streams.$sinks.bigFatArrayOfEverything
-        bigFatArrayOfEverything(next) {
-            console.log('bigFatArrayOfEverything:', next)
-        }
-    }
+    sinks(sources) {
+      // Do something with the sources from above.
+      const bigFatArrayOfEverything = flyd.combine(
+        (...deps, self, changed) => {
+          return deps.map(dep => dep())
+        },
+        [sources.mouseEvents, sources.labelProp, sources.combinedProp, sources.deepProp]
+      )
+      return { bigFatArrayOfEverything }
+    },
+  },
 }
+```
+
+
+
+## Example: Counter with Reset
+
+```html
+<template lang="html">
+  <div class="counter">
+    <!-- Here we have a Data value that's automatically updated by a Sink Stream of the same name -->
+    <div class="counter-value">{{ currentCount }}</div>
+    <div class="counter-controls">
+      <!--
+        Here, we use some Source Streams as the event handlers.
+        This results in those events being pushed straight into the streams.
+      -->
+      <button @click="$streams.incrementClicks">Increment</button>
+      <button @click="$streams.resetClicks">Reset</button>
+    </div>
+  </div>
+</template>
+
+<script>
+import flyd from 'flyd'
+
+import { StreamsMixin } from 'vue-flyd'
+
+export default {
+  name: 'CounterWithReset',
+
+  mixins: [StreamsMixin],
+
+  streams: {
+    sources() {
+      // For clicks and other DOM events, we just create plain streams,
+      // Then as noted above, we shove events straight into them.
+      const incrementClicks = flyd.stream()
+      const resetClicks = flyd.stream()
+
+      // Expose those two streams as Sources.
+      return { incrementClicks, resetClicks }
+    },
+    sinks(sources) {
+      // Just to make things short, I made the actions plain functions...
+      const actionTypes = {
+        increment: acc => acc + 1,
+        reset: () => 0,
+      }
+
+      // Replace each event with a function to call instead,
+      // and merge those function streams together...
+      const clickActions = flyd.merge(
+        sources.incrementClicks.map(() => actionTypes.increment),
+        sources.resetClicks.map(() => actionTypes.reset)
+      )
+
+      // Then just scan over the stream of functions that come through.
+      const currentCount = clickActions.pipe(flyd.scan((acc, fn) => fn(acc), 0))
+
+      // Finally, return any Sinks we want to expose to Vue.
+      return { currentCount }
+    },
+  }
+}
+</script>
 ```
