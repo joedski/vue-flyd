@@ -1,4 +1,4 @@
-import SteramsManager from './StreamsManager'
+import StreamsManager from './StreamsManager'
 
 export default {
   beforeCreate() {
