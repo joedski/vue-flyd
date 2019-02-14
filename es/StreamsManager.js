@@ -30,24 +30,16 @@ export default function StreamsManager(vm) {
       else {
         sourceStream = Object.assign(flyd.stream(), {
           $watch() {
-            // If the name doesn't exist as a prop, don't watch it.
-            // This means you can create pure sources without an associated prop,
-            // which is useful for passing in events.
-            // TODO: Support path names?
-            if (typeof watchBinding === 'string' && ! (watchBinding in vm)) {
-              return
-            }
-            // Allow simple opt-out of automatic behavior.
-            // Useful if you want a source to have the same name as a prop,
-            // but don't want it to use $watch.  For some reason.
-            if (typeof watchBinding === 'boolean' && ! watchBinding) {
-              return
-            }
+            // Nothing to watch if we're not watching.
+            if (!watchBinding) return
+
             vm.$watch(
               // NOTE: When the watchBinding is a function, it's called
               // with the vm as the context.
               watchBinding,
               watchHandler(sourceStream),
+              // NOTE: When passing `immediate: true`, a value will be
+              // immediately pushed into the stream!
               watchOptions
             )
           },
