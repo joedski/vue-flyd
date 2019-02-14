@@ -1,5 +1,4 @@
 import flyd from 'flyd'
-import vmHasProp from './vmHasProp'
 
 export default function StreamsManager(vm) {
   const config = vm.$options.streams
