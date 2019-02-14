@@ -113,12 +113,13 @@ export default {
 
 ### Component Option `streams`
 
-The Component Option `streams` has two keys: `streams.sources` and `streams.sinks`.
+The `StreamsMixin` adds support for a Component Option named `streams`, which itself has two keys: `streams.sources` and `streams.sinks`.
 
 
 ### Component Option `streams.sources`
 
 - Type: `streams.sources: (utilities) => { [sourceName: string]: Stream<any> }`
+- This function is used to define the Source Streams for your components, which serve as the inputs to the Stream processing stuff.
 
 #### Parameters of Component Option `streams.sources`
 
@@ -137,13 +138,14 @@ The Component Option `streams` has two keys: `streams.sources` and `streams.sink
 
 - Type: `{ [sourceName: string]: Stream<any> }`
 - An object mapping names to Source Streams.
-    - These will be accessible at `this.$streams.$sources[sourceName]` and are also accessible at `this.$streams[sourceName]` for convenience.
+    - These will be accessible at `this.$streams.$sources[sourceName]` and are aliased at `this.$streams[sourceName]` for convenience.
     - These Source Streams are the inputs into your stream processing stuff, and they're where you'll push inputs into, for instance, DOM events or component events of various sorts.
 
 
 ### Component Option `streams.sinks`
 
 - Type: `streams.sinks: (sources: { [sourceName: string]: Stream<any> }) => { [sinkName: string]: Stream<any> }`
+- This function defines the Sinks of your Stream processing stuff, derived from the Sources defined earlier.
 
 #### Parameters of Component Option `streams.sinks`
 
@@ -253,6 +255,7 @@ export default {
       const currentCount = clickActions.pipe(flyd.scan((acc, fn) => fn(acc), 0))
 
       // Finally, return any Sinks we want to expose to Vue.
+      // A new Data value will be created with the same name for each Sink Stream.
       return { currentCount }
     },
   }
