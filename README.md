@@ -145,3 +145,58 @@ As an added convenience, a Data Prop will be created for each stream returned in
 Thus, if you return `{ bar: someDerivedStream }`, you'll have the following available:
 - The Stream itself at `this.$streams.$sinks.bar`
 - The current value of the Stream at `this.bar`
+
+#### Example Calls
+
+```js
+export default {
+    mixins: [StreamsMixin],
+
+    streams(source) {
+        // (name) => Stream<*>
+        const sourceWithNoWatch = source('bareSource')
+        // (name, watchBinding) => Stream<*>
+        const sourceWithPropWatch = source('propSource', 'someProp')
+        // (name, watchBinding) => Stream<*>
+        const sourceWithFunctionWatch = source('funSource', () => (this.someProp + this.otherProp))
+        // (name, watchBinding, watchHandler) => Stream<*>
+        const sourceWithPropWatchAndHandler = source(
+            'doublePropSource',
+            'otherProp',
+            stream => (prev, next) => stream([prev, next])
+        )
+        // (name, watchBinding, watchOptions) => Stream<*>
+        const sourceWithDeepWatcher = source(
+            'deepPropSource',
+            'someObjectProp',
+            { deep: true, immediate: true }
+        )
+        // (name, watchBinding, watchHandler, watchOptions) => Stream<*>
+        const sourceWithDeepWatcherAndHandler = source(
+            'deepPropSource',
+            'someObjectProp',
+            stream => (prev, next) => stream([prev, next])
+            { deep: true, immediate: true }
+        )
+
+        const bigFatArrayOfEverything = flyd.combine(
+            (...deps, self, changed) => {
+                return deps.map(dep => dep())
+            },
+            [sourceWithNoWatch, sourceWithPropWatch, sourceWithFunctionWatch, sourceWithPropWatchAndHandler, sourceWithDeepWatcher]
+        )
+
+        // return sinks.
+        return {
+            bigFatArrayOfEverything
+        }
+    },
+
+    watch: {
+        // this.bigFatArrayOfEverything holds the current value of the stream this.$streams.$sinks.bigFatArrayOfEverything
+        bigFatArrayOfEverything(next) {
+            console.log('bigFatArrayOfEverything:', next)
+        }
+    }
+}
+```
