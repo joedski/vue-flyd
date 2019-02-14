@@ -51,7 +51,10 @@ export default function StreamsManager(vm) {
         : {}
 
       return Object.keys(this.$sinks).reduce(
-        (acc, key) => (acc[key] = undefined, acc),
+        (acc, key) => {
+          acc[key] = this.$sinks[key]()
+          return acc
+        },
         {}
       )
     },
