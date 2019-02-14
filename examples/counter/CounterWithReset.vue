@@ -20,33 +20,29 @@ export default {
     StreamsMixin,
   ],
 
-  streams(source) {
-    // Two separate inputs...
-    const incrementClicks = source('incrementClicks')
-    const resetClicks = source('resetClicks')
+  streams: {
+    sources() {
+      const incrementClicks = flyd.stream()
+      const resetClicks = flyd.stream()
 
-    // Some things to do...
-    const actionsTypes = {
-      increment: acc => acc + 1,
-      reset: () => 0,
-    }
+      return { incrementClicks, resetClicks }
+    },
+    sinks(sources) {
+      const actionTypes = {
+        increment: acc => acc + 1,
+        reset: () => 0,
+      }
 
-    // Let's map those objects to meaningful values.
-    const clickActions = flyd.merge(
-      incrementClicks.map(() => actionsTypes.increment),
-      resetClicks.map(() => actionsTypes.reset)
-    )
+      const clickActions = flyd.merge(
+        sources.incrementClicks.map(() => actionTypes.increment),
+        sources.resetClicks.map(() => actionTypes.reset)
+      )
 
-    // Now create a derived stream, scanning over those action names.
-    const currentCount = clickActions.pipe(flyd.scan(
-      (acc, action) => action(acc),
-      0
-    ))
+      const currentCount = clickActions.pipe(flyd.scan((acc, fn) => fn(acc), 0))
 
-    return {
-      currentCount,
-    }
-  },
+      return { currentCount }
+    },
+  }
 }
 </script>
 
