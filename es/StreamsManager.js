@@ -15,7 +15,7 @@ export default function StreamsManager(vm) {
       // If it's a stream, then subscribe to it directly, bypassing vue.
       // We can check this because $createSource is called in $data, which is itself
       // called in the data hook on the component, and props are available there.
-      if (typeof watchBinding === 'string' && flyd.isStream(vm[watchBinding])) {
+      if (typeof watchBinding === 'string' && vmHasProp(vm, watchBinding) && flyd.isStream(vm[watchBinding])) {
         sourceStream = Object.assign(flyd.map(
           next => next,
           vm[watchBinding]
