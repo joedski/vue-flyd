@@ -25,22 +25,21 @@ export default {
     const incrementClicks = source('incrementClicks')
     const resetClicks = source('resetClicks')
 
+    // Some things to do...
+    const actionsTypes = {
+      increment: acc => acc + 1,
+      reset: () => 0,
+    }
+
     // Let's map those objects to meaningful values.
     const clickActions = flyd.merge(
-      incrementClicks.map(() => 'increment'),
-      resetClicks.map(() => 'reset')
+      incrementClicks.map(() => actionsTypes.increment),
+      resetClicks.map(() => actionsTypes.reset)
     )
 
     // Now create a derived stream, scanning over those action names.
-    // Yeah, yeah, you just recreated redux.  It only gets better from here, though.
     const currentCount = clickActions.pipe(flyd.scan(
-      (acc, action) => {
-        switch (action) {
-          case 'reset': return 0
-          default:
-          case 'increment': return acc + 1
-        }
-      },
+      (acc, action) => action(acc),
       0
     ))
 
