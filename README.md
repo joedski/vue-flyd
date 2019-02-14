@@ -111,15 +111,13 @@ The `StreamsMixin` adds support for the Component Option `streams(source)`, whic
 
 The Streams Definition Function receives the following arguments:
 
-- `source: (name, watchBinding, watchHandler, watchOptions) => Stream<*>` is a function that declares a Source Stream, optionally with extra arguments to automatically create a Vue Watch Binding and link it to that stream.
+- `source: (name, watchBinding, watchOptions) => Stream<*>` is a function that declares a Source Stream, optionally with extra arguments to automatically create a Vue Watch Binding and link it to that stream.
     - Parameters:
         - `name: string` The name of this Source Stream.
             - Required.
         - `watchBinding: string | Function` Watches an expression or result of a function.  Anything you can pass to [`vm.$watch()`](https://vuejs.org/v2/api/#vm-watch) you can pass in here, too.
             - Default: `undefined`.  If no `watchBinding` is passed, [`$watch`](https://vuejs.org/v2/api/#vm-watch) is not called.
             - NOTE: Because the Streams Definition Function `streams()` is called with the Vue Component Instance as its context, using arrow functions for the Watch Binding is perfectly fine.
-        - `watchHandler: stream => (next, prev) => any` Handler that defines how watched values are pushed into the stream.
-            - Default: `stream => next => stream(next)` Just pushes the next value onto the stream.
         - `watchOptions: Partial<{ deep: boolean, immediate: boolean }>` [Options to pass to `$watch`](https://vuejs.org/v2/api/#vm-watch).
             - Default: `{ immediate: true }` By default, watch bindings are immediate to ensure the stream always has an initial value.
     - Return Value: `{ [sinkName: string]: Stream }`
@@ -128,7 +126,6 @@ The Streams Definition Function receives the following arguments:
         - `(name: string) => Stream<*>` Create a stream without any watching.
         - `(name: string, watchBinding: string | Function) => Stream<*>` Create a stream, watching the given binding.
         - `(name: string, watchBinding: string | Function, watchOptions: Object) => Stream<*>` Create a Stream, watching the given binding, with the given options.
-        - `(name: string, watchBinding: string | Function, watchHandler: stream => (prev, next) => any) => Stream<*>` Create a Stream, watching the given binding, using the given handler.
 
 #### How the Streams Definition Function `stream(source)` Integrates With the Component
 
@@ -159,23 +156,10 @@ export default {
         const sourceWithPropWatch = source('propSource', 'someProp')
         // (name, watchBinding) => Stream<*>
         const sourceWithFunctionWatch = source('funSource', () => (this.someProp + this.otherProp))
-        // (name, watchBinding, watchHandler) => Stream<*>
-        const sourceWithPropWatchAndHandler = source(
-            'doublePropSource',
-            'otherProp',
-            stream => (prev, next) => stream([prev, next])
-        )
         // (name, watchBinding, watchOptions) => Stream<*>
         const sourceWithDeepWatcher = source(
             'deepPropSource',
             'someObjectProp',
-            { deep: true, immediate: true }
-        )
-        // (name, watchBinding, watchHandler, watchOptions) => Stream<*>
-        const sourceWithDeepWatcherAndHandler = source(
-            'deepPropSource',
-            'someObjectProp',
-            stream => (prev, next) => stream([prev, next])
             { deep: true, immediate: true }
         )
 
@@ -183,7 +167,7 @@ export default {
             (...deps, self, changed) => {
                 return deps.map(dep => dep())
             },
-            [sourceWithNoWatch, sourceWithPropWatch, sourceWithFunctionWatch, sourceWithPropWatchAndHandler, sourceWithDeepWatcher]
+            [sourceWithNoWatch, sourceWithPropWatch, sourceWithFunctionWatch, sourceWithDeepWatcher]
         )
 
         // return sinks.
