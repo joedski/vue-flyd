@@ -143,7 +143,7 @@ Thus, if you return `{ bar: someDerivedStream }`, you'll have the following avai
 - The Stream itself at `this.$streams.$sinks.bar`
 - The current value of the Stream at `this.bar`
 
-#### Example Calls
+#### Example Calls to `source()`
 
 ```js
 export default {
