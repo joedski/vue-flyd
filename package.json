@@ -1,6 +1,7 @@
 {
   "name": "@joedski/vue-flyd",
   "version": "0.3.0",
+  "private": false,
   "description": "Use Flyd in Vue!  If some reaction is good, more is better, right?",
   "main": "es/index.js",
   "module": "es/index.js",
