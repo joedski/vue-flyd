@@ -1,7 +1,5 @@
 import flyd from 'flyd'
 
-// TODO: Don't need to pass in manager, can just return controller + sources + sinks
-// and do stuff with them to the manager.  Or just drop the manager name altogether.
 export default function StreamsManager(vm) {
   const config = vm.$options.streams
   const hasConfig = !!config && typeof config === 'object'
@@ -57,16 +55,21 @@ export default function StreamsManager(vm) {
     createStreamFromWatch(binding, options) {
       const stream = flyd.stream()
       this.watches.push(() => {
+        // By default, immediate: true is used so that the initial value
+        // of the watch expression/function will be used as the initial
+        // value of the stream.
+        // Explicitly pass immediate: false if you want to not have
+        // an initial value in the stream.
         vm.$watch(binding, next => stream(next), { immediate: true, ...options })
       })
       return stream
     },
 
     data() {
-      return Object.entries(this.sinks).reduce(
-        (acc, [key, stream]) => {
-          // TODO: This?  Or undefined?  Hm.
-          acc[key] = stream()
+      return Object.keys(this.sinks).reduce(
+        (acc, key) => {
+          // The value will be set (or not set) during `watch()`.
+          acc[key] = undefined
           return acc
         },
         {}
@@ -74,10 +77,15 @@ export default function StreamsManager(vm) {
     },
 
     watch() {
+      // Set all of the watch expressions first, to push initial values
+      // into any sources.
+      this.watches.forEach(watchFn => watchFn())
+
+      // NOTE: This will immediately set the given property
+      // if the stream has a value already in it.
       Object.entries(this.sinks).forEach(([key, stream]) => {
         stream.pipe(flyd.on(e => { vm[key] = e }))
       })
-      this.watches.forEach(watchFn => watchFn())
     },
 
     end() {
