@@ -16,14 +16,19 @@ export default {
 
   // data() comes before created(), as per the vue lifecycle spec.
   data() {
+    if (!this.$streams) return {}
     return this.$streams.$manager.data()
   },
 
   created() {
-    this.$streams.$manager.watch()
+    if (this.$streams) {
+      this.$streams.$manager.watch()
+    }
   },
 
   beforeDestroy() {
-    this.$streams.$manager.end()
+    if (this.$streams) {
+      this.$streams.$manager.end()
+    }
   },
 }
