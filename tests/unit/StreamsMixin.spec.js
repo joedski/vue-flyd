@@ -6,6 +6,7 @@ describe('StreamsMixin', () => {
   })
 
   describe('Usage', () => {
+    const flyd = require('flyd')
     const Vue = require('vue/dist/vue')
     const StreamsMixin = require('../../es/StreamsMixin').default
     const errors = []
@@ -18,67 +19,142 @@ describe('StreamsMixin', () => {
       errors.length = 0
     })
 
-    it('should not cause an error when a component using it does not specify any streams config', async () => {
-      const TestComponent = {
-        mixins: [StreamsMixin],
+    describe('Basic Setup and Configuration', () => {
+      it('should not cause an error when a component using it does not specify any streams config', async () => {
+        const TestComponent = {
+          mixins: [StreamsMixin],
 
-        template: `
-          <h1>Hi!</h1>
-        `,
-      }
+          template: `
+            <h1>Hi!</h1>
+          `,
+        }
 
-      const app = new Vue({
-        render: h => h(TestComponent),
+        const app = new Vue({
+          render: h => h(TestComponent),
+        })
+
+        app.$mount()
+        await Vue.nextTick()
+
+        expect(errors.length).toEqual(0)
       })
 
-      app.$mount()
-      await Vue.nextTick()
+      it('should cause an error when a component has sources() but not sinks()', async () => {
+        const TestComponent = {
+          mixins: [StreamsMixin],
 
-      expect(errors.length).toEqual(0)
+          streams: {
+            sources() { return {} },
+          },
+
+          template: `<h1>Hi!</h1>`,
+        }
+
+        const app = new Vue({
+          render: h => h(TestComponent),
+        })
+
+        app.$mount()
+
+        await Vue.nextTick()
+
+        expect(errors.length).toBeGreaterThan(0)
+      })
+
+      it('should cause an error when a component has sinks() but not sources()', async () => {
+        const TestComponent = {
+          mixins: [StreamsMixin],
+
+          streams: {
+            sinks() { return {} },
+          },
+
+          template: `<h1>Hi!</h1>`,
+        }
+
+        const app = new Vue({
+          render: h => h(TestComponent),
+        })
+
+        app.$mount()
+
+        await Vue.nextTick()
+
+        expect(errors.length).toBeGreaterThan(0)
+      })
     })
 
-    it('should cause an error when a component has sources() but not sinks()', async () => {
-      const TestComponent = {
-        mixins: [StreamsMixin],
+    describe('Basic Usage', () => {
+      it('should create Data values for each Sink', async () => {
+        const TestComponent = {
+          mixins: [StreamsMixin],
 
-        streams: {
-          sources() { return {} },
-        },
+          streams: {
+            sources() {
+              return {}
+            },
+            sinks() {
+              return {
+                foo: flyd.stream(1),
+                bar: flyd.stream('yay'),
+              }
+            },
+          },
 
-        template: `<h1>Hi!</h1>`,
-      }
+          template: `<div>foo: {{ foo }}, bar: {{ bar }}</div>`
+        }
 
-      const app = new Vue({
-        render: h => h(TestComponent),
+        const app = new Vue(TestComponent)
+
+        app.$mount()
+
+        await Vue.nextTick()
+
+        expect(app.$data.foo).toEqual(1)
+        expect(app.$data.bar).toEqual('yay')
+        expect(app.$el).toBeTruthy()
+        expect(app.$el.textContent).toEqual('foo: 1, bar: yay')
+        expect(errors.length).toEqual(0)
       })
 
-      app.$mount()
+      it('should update Data values when Sinks are updated', async () => {
+        const TestComponent = {
+          mixins: [StreamsMixin],
 
-      await Vue.nextTick()
+          streams: {
+            sources() {
+              return {
+                foo: flyd.stream(1),
+              }
+            },
+            sinks(sources) {
+              return {
+                bar: sources.foo.pipe(flyd.scan((acc, v) => acc + v, 0)),
+              }
+            },
+          },
 
-      expect(errors.length).toBeGreaterThan(0)
-    })
+          template: `<div>bar: {{ bar }}</div>`
+        }
 
-    it('should cause an error when a component has sinks() but not sources()', async () => {
-      const TestComponent = {
-        mixins: [StreamsMixin],
+        const app = new Vue(TestComponent)
 
-        streams: {
-          sinks() { return {} },
-        },
+        app.$mount()
 
-        template: `<h1>Hi!</h1>`,
-      }
+        await Vue.nextTick()
 
-      const app = new Vue({
-        render: h => h(TestComponent),
+        expect(app.bar).toEqual(1)
+
+        app.$streams.foo(5)
+
+        // Streams and Data values update synchronously.
+        expect(app.bar).toEqual(6)
+
+        await Vue.nextTick()
+
+        expect(app.$el.textContent).toEqual('bar: 6')
+        expect(errors.length).toEqual(0)
       })
-
-      app.$mount()
-
-      await Vue.nextTick()
-
-      expect(errors.length).toBeGreaterThan(0)
     })
   })
 })
