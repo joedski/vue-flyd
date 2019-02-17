@@ -155,6 +155,45 @@ describe('StreamsMixin', () => {
         expect(app.$el.textContent).toEqual('bar: 6')
         expect(errors.length).toEqual(0)
       })
+
+      it('should end() all streams during component teardown', async () => {
+        const TestComponent = {
+          mixins: [StreamsMixin],
+
+          streams: {
+            sources() {
+              return {
+                foo: flyd.stream(1),
+              }
+            },
+            sinks(sources) {
+              return {
+                bar: sources.foo.pipe(flyd.scan((acc, v) => acc + v, 0)),
+              }
+            },
+          },
+
+          template: `<div>bar: {{ bar }}</div>`
+        }
+
+        const app = new Vue(TestComponent)
+
+        app.$mount()
+
+        await Vue.nextTick()
+
+        app.$streams.foo(5)
+
+        await Vue.nextTick()
+
+        expect(app.$el.textContent).toEqual('bar: 6')
+        expect(errors.length).toEqual(0)
+
+        app.$destroy()
+
+        expect(app.$streams.$sources.foo.end()).toEqual(true)
+        expect(app.$streams.$sinks.bar.end()).toEqual(true)
+      })
     })
   })
 })
