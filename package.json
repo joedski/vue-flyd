@@ -1,6 +1,6 @@
 {
   "name": "@joedski/vue-flyd",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "private": false,
   "description": "Use Flyd in Vue!  If some reaction is good, more is better, right?",
   "main": "es/index.js",
