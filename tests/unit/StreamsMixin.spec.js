@@ -195,5 +195,55 @@ describe('StreamsMixin', () => {
         expect(app.$streams.$sinks.bar.end()).toEqual(true)
       })
     })
+
+    describe('Utilities', () => {
+      describe('fromWatch', () => {
+        it('should create a stream from watch expressions on Props', async () => {
+          const TestComponent = {
+            name: 'TestComponent',
+
+            mixins: [StreamsMixin],
+
+            props: {
+              name: {
+                type: String,
+              },
+            },
+
+            streams({ fromWatch }) {
+              const name = fromWatch('name')
+              const greetings = name.pipe(flyd.map(s => `Hello, ${s}!`))
+
+              return {
+                sources: { name },
+                sinks: { greetings },
+              }
+            },
+
+            template: `<div>{{ greetings }}</div>`
+          }
+
+          const app = new Vue({
+            data: {
+              name: 'Sky',
+            },
+
+            components: { TestComponent },
+
+            template: `<test-component :name="name" />`,
+          })
+
+          app.$mount()
+          await Vue.nextTick()
+
+          expect(app.$el.textContent).toEqual('Hello, Sky!')
+
+          app.name = 'World'
+          await Vue.nextTick()
+
+          expect(app.$el.textContent).toEqual('Hello, World!')
+        })
+      })
+    })
   })
 })
