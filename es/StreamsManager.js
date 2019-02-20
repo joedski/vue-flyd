@@ -1,16 +1,9 @@
 import flyd from 'flyd'
 
 export default function StreamsManager(vm) {
-  const config = vm.$options.streams
-  const hasConfig = !!config && typeof config === 'object'
+  const createStreams = vm.$options.streams || (() => ({ sources: {}, sinks: {} }))
+  const hasConfig = typeof createStreams === 'function'
   const componentName = vm.$options.name || '(Anonymous Component)'
-
-  if (hasConfig && !(
-    typeof config.sources === 'function'
-    && typeof config.sinks === 'function'
-  )) {
-    throw new Error(`StreamsController cannot be created for ${componentName}: vm.$options.streams.sources and vm.$options.streams.sinks must both be functions`)
-  }
 
   return {
     watches: [],
@@ -23,27 +16,37 @@ export default function StreamsManager(vm) {
         this.sinks = {}
       }
       else {
-        this.sources = config.sources.call(vm, {
+        const streams = createStreams.call(vm, {
           fromWatch: (binding, options) => this.createStreamFromWatch(binding, options),
         })
 
+        /* eslint-disable no-console */
+        if (streams) {
+          this.sources = streams.sources || {}
+          this.sinks = streams.sinks || {}
+        }
+        else {
+          console.warn(`StreamsController(${componentName}): vm.$options.streams() did not return an object`)
+          this.sources = {}
+          this.sinks = {}
+        }
+
         if (! this.sources) {
-          console.warn(`StreamsController(${componentName}): vm.$options.sources() did not return an object`)
+          console.warn(`StreamsController(${componentName}): object returned by vm.$options.streams() did not contain a sources property`)
           this.sources = {}
         }
         if (! Object.values(this.sources).every(flyd.isStream)) {
           console.warn(`StreamsController(${componentName}): object returned by vm.$options.sources() has properties which are not streams`)
         }
 
-        this.sinks = config.sinks.call(vm, this.sources)
-
         if (! this.sinks) {
-          console.warn(`StreamsController(${componentName}): vm.$options.sinks() did not return an object`)
+          console.warn(`StreamsController(${componentName}): object returned by vm.$options.sinks() did not contain a sinks property`)
           this.sinks = {}
         }
         if (! Object.values(this.sinks).every(flyd.isStream)) {
           console.warn(`StreamsController(${componentName}): object returned by vm.$options.sinks() has properties which are not streams`)
         }
+        /* eslint-enable no-console */
       }
 
       return {

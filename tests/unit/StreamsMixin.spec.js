@@ -39,48 +39,58 @@ describe('StreamsMixin', () => {
         expect(errors.length).toEqual(0)
       })
 
-      it('should cause an error when a component has sources() but not sinks()', async () => {
+      it('should work if only sources are returned', async () => {
+        expect.assertions(1)
+
+        // though it will log to the console... Hm.
         const TestComponent = {
           mixins: [StreamsMixin],
 
-          streams: {
-            sources() { return {} },
+          streams() {
+            return {
+              sources: {
+                clicks: flyd.stream(),
+              },
+            }
           },
 
-          template: `<h1>Hi!</h1>`,
+          template: `<div>hi</div>`
         }
 
-        const app = new Vue({
-          render: h => h(TestComponent),
-        })
+        const app = new Vue(TestComponent)
 
         app.$mount()
 
         await Vue.nextTick()
 
-        expect(errors.length).toBeGreaterThan(0)
+        expect(errors.length).toEqual(0)
       })
 
-      it('should cause an error when a component has sinks() but not sources()', async () => {
+      it('should work if only sinks are returned', async () => {
+        expect.assertions(1)
+
+        // though it will log to the console... Hm.
         const TestComponent = {
           mixins: [StreamsMixin],
 
-          streams: {
-            sinks() { return {} },
+          streams() {
+            return {
+              sinks: {
+                foo: flyd.stream('foo'),
+              },
+            }
           },
 
-          template: `<h1>Hi!</h1>`,
+          template: `<div>foo: {{ foo }}</div>`,
         }
 
-        const app = new Vue({
-          render: h => h(TestComponent),
-        })
+        const app = new Vue(TestComponent)
 
         app.$mount()
 
         await Vue.nextTick()
 
-        expect(errors.length).toBeGreaterThan(0)
+        expect(errors.length).toEqual(0)
       })
     })
 
@@ -89,16 +99,14 @@ describe('StreamsMixin', () => {
         const TestComponent = {
           mixins: [StreamsMixin],
 
-          streams: {
-            sources() {
-              return {}
-            },
-            sinks() {
-              return {
+          streams() {
+            return {
+              sources: {},
+              sinks: {
                 foo: flyd.stream(1),
                 bar: flyd.stream('yay'),
               }
-            },
+            }
           },
 
           template: `<div>foo: {{ foo }}, bar: {{ bar }}</div>`
@@ -121,17 +129,13 @@ describe('StreamsMixin', () => {
         const TestComponent = {
           mixins: [StreamsMixin],
 
-          streams: {
-            sources() {
-              return {
-                foo: flyd.stream(1),
-              }
-            },
-            sinks(sources) {
-              return {
-                bar: sources.foo.pipe(flyd.scan((acc, v) => acc + v, 0)),
-              }
-            },
+          streams() {
+            const foo = flyd.stream(1)
+            const bar = foo.pipe(flyd.scan((acc, v) => acc + v, 0))
+            return {
+              sources: { foo },
+              sinks: { bar },
+            }
           },
 
           template: `<div>bar: {{ bar }}</div>`
@@ -160,17 +164,13 @@ describe('StreamsMixin', () => {
         const TestComponent = {
           mixins: [StreamsMixin],
 
-          streams: {
-            sources() {
-              return {
-                foo: flyd.stream(1),
-              }
-            },
-            sinks(sources) {
-              return {
-                bar: sources.foo.pipe(flyd.scan((acc, v) => acc + v, 0)),
-              }
-            },
+          streams() {
+            const foo = flyd.stream(1)
+            const bar = foo.pipe(flyd.scan((acc, v) => acc + v, 0))
+            return {
+              sources: { foo },
+              sinks: { bar },
+            }
           },
 
           template: `<div>bar: {{ bar }}</div>`
