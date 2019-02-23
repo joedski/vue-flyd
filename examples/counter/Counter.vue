@@ -19,18 +19,18 @@ export default {
     StreamsMixin,
   ],
 
-  streams: {
-    sources() {
-      // This creates a stream accessible via this.$streams.$sources.incrementClicks,
-      // and aliased to this.$streams.incrementClicks.
-      const incrementClicks = flyd.stream()
-      return { incrementClicks }
-    },
-    sinks(sources) {
-      // Now create a derived stream, scanning over input events by just summing them.
-      const currentCount = sources.incrementClicks.pipe(flyd.scan(acc => acc + 1, 0))
-      return { currentCount }
-    },
+  streams() {
+    // This creates a stream accessible via this.$streams.$sources.incrementClicks,
+    // and aliased to this.$streams.incrementClicks.
+    const incrementClicks = flyd.stream()
+
+    // Now create a derived stream, scanning over input events by just summing them.
+    const currentCount = incrementClicks.pipe(flyd.scan(acc => acc + 1, 0))
+
+    return {
+      sources: { incrementClicks },
+      sinks: { currentCount },
+    }
   },
 }
 </script>

@@ -20,29 +20,27 @@ export default {
     StreamsMixin,
   ],
 
-  streams: {
-    sources() {
-      const incrementClicks = flyd.stream()
-      const resetClicks = flyd.stream()
+  streams() {
+    const incrementClicks = flyd.stream()
+    const resetClicks = flyd.stream()
 
-      return { incrementClicks, resetClicks }
-    },
-    sinks(sources) {
-      const actionTypes = {
-        increment: acc => acc + 1,
-        reset: () => 0,
-      }
+    const actionTypes = {
+      increment: acc => acc + 1,
+      reset: () => 0,
+    }
 
-      const clickActions = flyd.merge(
-        sources.incrementClicks.map(() => actionTypes.increment),
-        sources.resetClicks.map(() => actionTypes.reset)
-      )
+    const clickActions = flyd.merge(
+      incrementClicks.map(() => actionTypes.increment),
+      resetClicks.map(() => actionTypes.reset)
+    )
 
-      const currentCount = clickActions.pipe(flyd.scan((acc, fn) => fn(acc), 0))
+    const currentCount = clickActions.pipe(flyd.scan((acc, fn) => fn(acc), 0))
 
-      return { currentCount }
-    },
-  }
+    return {
+      sources: { incrementClicks, resetClicks },
+      sinks: { currentCount },
+    }
+  },
 }
 </script>
 
